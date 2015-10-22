@@ -245,6 +245,39 @@ describe Sinatra::Namespace do
           end
 
           context 'when the namespace has a condition' do
+            context 'when the condition fails and there is no alternate route' do
+              it 'will fail' do
+                mock_app do
+                  set :environment, 'production'
+                  set(:env){|env|env == settings.environment}
+                  namespace('/test', :env => 'test') do
+                    send(verb, '/env') { settings.environment }
+                  end # namespace do
+                end # mock_app do
+                settings.environment.should eq('production')
+                send(verb, '/test')
+                last_response.should_not be_ok
+                send(verb, '/test/env')
+                last_response.should_not be_ok
+              end # it do
+            end #context do
+
+            context 'when the condition passes' do
+              it 'will pass' do
+                mock_app do
+                  set :environment, 'test'
+                  set(:env){|env|env == settings.environment}
+                  namespace('/test', :env => 'test') do
+                    send(verb, '/env') { settings.environment }
+                  end # namespace do
+                end # mock_app do
+                settings.environment.should eq('test')
+                send(verb, '/test/env')
+                last_response.should be_ok
+                body.should  == 'test' unless verb == :head
+              end # it do
+            end # context do
+
             specify 'are accepted in the before-filter' do
               ran = false
               namespace '/', :provides => :txt do
